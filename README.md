@@ -101,4 +101,27 @@ Open Swagger UI:
 
 - `http://localhost:5477/docs`
 
+## Tests
+
+Run the automated test suite:
+
+```bash
+npm test
+```
+
+Tests cover:
+- All endpoint contracts and edge cases
+- Validation logic and error handling
+- Middleware branches (logging, error handlers)
+- Large payload handling (up to 1,000,000 transactions)
+- Performance-critical paths (prefix sums, binary search)
+
+Test framework: `tap` with `supertest`. Coverage target: ~99%.
+
+To run with coverage report:
+
+```bash
+npm run test:coverage
+```
+
 

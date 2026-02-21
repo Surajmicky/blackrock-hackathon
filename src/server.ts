@@ -1,6 +1,17 @@
 import { buildApp } from './app';
 import { logger } from './utils/logger';
 
+// Global handlers for errors outside request context
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.error('Unhandled rejection', { reason });
+  process.exit(1);
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught exception', { error: error.message, stack: error.stack });
+  process.exit(1);
+});
+
 const start = async () => {
   const app = buildApp();
   const port = 5477;

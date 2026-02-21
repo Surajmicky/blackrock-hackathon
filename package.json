@@ -1,13 +1,14 @@
 {
-  "name": "workspace",
+  "name": "blackrock-hackathon",
   "version": "1.0.0",
-  "description": "",
+  "description": "Blackrock Hackathon Challenge Solution",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "npm run build && node dist/server.js",
-    "test": "tap -r ts-node/register src/tests/**/*.test.ts"
+    "test": "tap -r ts-node/register src/tests/**/*.test.ts",
+    "test:coverage": "tap -r ts-node/register --coverage-report=lcov src/tests/**/*.test.ts"
   },
   "keywords": [],
   "author": "",

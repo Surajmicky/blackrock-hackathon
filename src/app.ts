@@ -49,14 +49,14 @@ app.get('/blackrock/challenge/v1/performance',
 );
 
 // Health check
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', asyncHandler((_req: Request, res: Response) => {
   logger.info('Health check accessed');
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
-});
+}));
 
 const swaggerSpec = swaggerJSDoc({
   definition: {
@@ -338,9 +338,9 @@ const swaggerSpec = swaggerJSDoc({
   apis: []
 });
 
-app.get('/docs.json', (req: Request, res: Response) => {
+app.get('/docs.json', asyncHandler((_req: Request, res: Response) => {
   res.json(swaggerSpec);
-});
+}));
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
