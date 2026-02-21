@@ -356,19 +356,32 @@ export class TransactionService {
   private computeReturns(
     input: ReturnsInput,
     rate: number,
-    computeTaxBenefit: (amount: number, annualIncome: number) => number
+    computeTaxBenefit: (amount: number, annualIncome: number) => number,
+    options?: { useNominalProfits?: boolean }
   ): ReturnsResult {
     const { age, wage = 0, inflation, transactions, q, p, k } = input;
     const inflDec = normalizeInflation(inflation);
 
     const baseTxs = transactions.map(buildTransaction);
     const adjusted = applyQP(baseTxs, q, p);
-    const times = adjusted.map((x) => x.ms);
+
+    // Filter negatives and duplicates (keep first occurrence per timestamp), same as filterTransactions
+    const seen = new Set<string>();
+    const valid: AdjustedTx[] = [];
+    for (const it of adjusted) {
+      if (it.tx.amount < 0) continue;
+      if (Number.isNaN(it.ms)) continue;
+      if (seen.has(it.tx.date)) continue;
+      seen.add(it.tx.date);
+      valid.push(it);
+    }
+
+    const times = valid.map((x) => x.ms);
 
     // Prefix sums for O(1) range queries
-    const prefix = new Float64Array(adjusted.length + 1);
-    for (let i = 0; i < adjusted.length; i++) {
-      prefix[i + 1] = prefix[i]! + adjusted[i]!.adjustedRemanent;
+    const prefix = new Float64Array(valid.length + 1);
+    for (let i = 0; i < valid.length; i++) {
+      prefix[i + 1] = prefix[i]! + valid[i]!.adjustedRemanent;
     }
 
     const kSums = k.map((period) => {
@@ -392,7 +405,7 @@ export class TransactionService {
 
     let transactionsTotalAmount = 0;
     let transactionsTotalCeiling = 0;
-    for (const it of adjusted) {
+    for (const it of valid) {
       if (!Number.isNaN(it.ms) && inAnyInterval(mergedK, it.ms)) {
         transactionsTotalAmount += it.tx.amount;
         transactionsTotalCeiling += it.tx.ceiling;
@@ -404,10 +417,11 @@ export class TransactionService {
     const growthFactor = Math.pow(1 + rate, t);
     const inflFactor = Math.pow(1 + inflDec, t);
 
+    const useNominal = options?.useNominalProfits ?? false;
     const savingsByDates: SavingsByDate[] = kSums.map((x) => {
       const A = x.amount * growthFactor;
       const AReal = A / inflFactor;
-      const profits = AReal - x.amount;
+      const profits = useNominal ? A - x.amount : AReal - x.amount;
       const taxBenefit = computeTaxBenefit(x.amount, annualIncome);
       return { start: x.start, end: x.end, amount: x.amount, profits, taxBenefit };
     });
@@ -425,6 +439,6 @@ export class TransactionService {
 
   async calculateIndexReturns(input: ReturnsInput): Promise<ReturnsResult> {
     logger.info('Calculating Index returns', { age: input.age, txCount: input.transactions.length });
-    return this.computeReturns(input, 0.1449, () => 0);
+    return this.computeReturns(input, 0.1449, () => 0, { useNominalProfits: true });
   }
 }
